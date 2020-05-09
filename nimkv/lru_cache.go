@@ -28,31 +28,35 @@ func NewLRUCache(c *CacheBase) (*LRUCache, []error) {
   }, nil
 }
 
-func (l *LRUCache) Get(key interface{}) (interface{}, error) {
+func (l *LRUCache) GetItem(key interface{}) (*cacheItem, error) {
   if item, ok := l.items[key]; ok {
+
+    // If item has expired, delete it and return an error.
     if l.isItemExpired(item) {
       l.evictItem(item)
       goto not_found
     }
 
     l.evictionList.MoveToFront(item)
-    return item.Value.(*cacheItem).value, nil
+    return item.Value.(*cacheItem), nil
+    // return item.Value.(*cacheItem).value, nil
   }
 not_found:
   return nil, errors.New(fmt.Sprintf("Can't find any item with key %v.", key))
 }
 
-func (l *LRUCache) isItemExpired(item *list.Element) bool {
-  if time.Now().After(item.Value.(*cacheItem).expirationTime) {
-    return true
+func (l *LRUCache) DeleteItem(key interface{}) error {
+  if item, ok := l.items[key]; ok {
+    l.evictItem(item)
+    return nil
   }
 
-  return false
+  return errors.New(fmt.Sprintf("Can't find any item with key %v.", key))
 }
 
 // Adds item to LRUCache. If item already exists, it will be overriden with new value.
 // If capacity is exceeded, least recently used item will be evicted.
-func (l *LRUCache) SetWithExpiry(key interface{}, value interface{}, ttl time.Duration) {
+func (l *LRUCache) SetItemWithExpiry(key interface{}, value interface{}, ttl time.Duration) {
   expirationTime := time.Now().Add(time.Duration(ttl) * time.Second)
 
   if item, ok := l.items[key]; ok {
@@ -73,8 +77,8 @@ func (l *LRUCache) SetWithExpiry(key interface{}, value interface{}, ttl time.Du
 }
 
 // Adds item to LRUCache with ttl of 0.
-func (l *LRUCache) Set(key, value interface{}) {
-  l.SetWithExpiry(key, value, 0)
+func (l *LRUCache) SetItem(key, value interface{}) {
+  l.SetItemWithExpiry(key, value, 0)
 }
 
 // Evicts n items from cache by LRU eviction policy.
@@ -91,4 +95,12 @@ func (l *LRUCache) EvictNItemsByLRU(n int) {
 func (l *LRUCache) evictItem(item *list.Element) {
   delete(l.items, item.Value.(*cacheItem).key)
   l.evictionList.Remove(item)
+}
+
+func (l *LRUCache) isItemExpired(item *list.Element) bool {
+  if time.Now().After(item.Value.(*cacheItem).expirationTime) {
+    return true
+  }
+
+  return false
 }

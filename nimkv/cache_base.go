@@ -29,6 +29,7 @@ type cacheItem struct {
   expirationTime time.Time
 }
 
+// Validates receiver struct, and initializes some fields.
 func (c *CacheBase) checkAndSetFields() []error {
   errorList := make([]error, 0, 2)
 
@@ -45,4 +46,20 @@ func (c *CacheBase) checkAndSetFields() []error {
 
   c.rwLock = sync.RWMutex{}
   return nil
+}
+
+func (c *cacheItem) Key() interface{} {
+  return c.key
+}
+
+func (c *cacheItem) Value() interface{} {
+  return c.value
+}
+
+func (c *cacheItem) TTL() time.Duration {
+  return c.ttl
+}
+
+func (c *cacheItem) ExpirationTime() time.Time {
+  return c.expirationTime
 }
