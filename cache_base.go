@@ -25,9 +25,6 @@ type CacheBase struct {
   Type string `yaml:"Type"`
 
   rwLock sync.RWMutex
-
-  // Will be assigned to ttl field of cacheItem if no expiration specified for an item when it is created.
-  DefaultTTL time.Duration `yaml:"DefaultTTL"`
 }
 
 // Validates receiver struct, and initializes some fields.
@@ -36,9 +33,6 @@ func (c *CacheBase) checkAndSetFields() []error {
 
   if c.Capacity <= 0 {
     errorList = append(errorList, errors.New("Cache Capacity has to be > 0."))
-  }
-  if c.DefaultTTL < 0 {
-    errorList = append(errorList, errors.New("DefaultTTL has to be >= 0;"))
   }
 
   if len(errorList) > 0 {

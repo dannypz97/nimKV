@@ -67,6 +67,8 @@ func (l *LRUCache) SetItemWithExpiry(key string, value interface{}, ttl time.Dur
 
   if item, ok := l.items[key]; ok {
     item.Value.(*cacheItem).Value = value
+    item.Value.(*cacheItem).TTL = ttl
+    item.Value.(*cacheItem).ExpirationTime = FriendlyTime(expirationTime)
     l.evictionList.MoveToFront(item)
   } else {
     l.items[key] = l.evictionList.PushFront(&cacheItem{

@@ -8,8 +8,17 @@ import (
 // For more human-readable time.
 type FriendlyTime time.Time
 
-func (t FriendlyTime) MarshalJSON() ([]byte, error) {
-    stamp := fmt.Sprintf("\"%s\"", time.Time(t).Format(time.UnixDate))
+func (ft FriendlyTime) MarshalJSON() ([]byte, error) {
+    var timeString string
+    var zeroTime time.Time
+
+    if zeroTime == time.Time(ft) {
+      timeString = ""
+    } else {
+      timeString = time.Time(ft).Format(time.UnixDate)
+    }
+
+    stamp := fmt.Sprintf("\"%s\"", timeString)
     return []byte(stamp), nil
 }
 
