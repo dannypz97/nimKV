@@ -11,7 +11,6 @@ type Cacher interface {
   DeleteItem(string) error
   SetItemWithExpiry(string, interface{}, time.Duration)
   SetItem(string, interface{})
-  EvictNItems(int)
 }
 
 // CacheBase struct has fields that could be reused across various specialised cache implementations.
@@ -48,31 +47,4 @@ func (c *CacheBase) checkAndSetFields() []error {
 
   c.rwLock = sync.RWMutex{}
   return nil
-}
-
-// cacheItem represents an item that will be stored in the cache.
-type cacheItem struct {
-  key string
-  value interface{}
-
-  // Unit: seconds.
-  // A ttl of 0 means the entry will never expire. It can still be evicted.
-  ttl time.Duration
-  expirationTime time.Time
-}
-
-func (c *cacheItem) Key() string {
-  return c.key
-}
-
-func (c *cacheItem) Value() interface{} {
-  return c.value
-}
-
-func (c *cacheItem) TTL() time.Duration {
-  return c.ttl
-}
-
-func (c *cacheItem) ExpirationTime() time.Time {
-  return c.expirationTime
 }

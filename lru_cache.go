@@ -59,22 +59,26 @@ func (l *LRUCache) DeleteItem(key string) error {
 // Adds item to LRUCache. If item already exists, it will be overriden with new value.
 // If capacity is exceeded, least recently used item will be evicted.
 func (l *LRUCache) SetItemWithExpiry(key string, value interface{}, ttl time.Duration) {
-  expirationTime := time.Now().Add(time.Duration(ttl) * time.Second)
+  var expirationTime  time.Time
+
+  if ttl > 0 {
+    expirationTime = time.Now().Add(time.Duration(ttl) * time.Second)
+  }
 
   if item, ok := l.items[key]; ok {
-    item.Value.(*cacheItem).value = value
+    item.Value.(*cacheItem).Value = value
     l.evictionList.MoveToFront(item)
   } else {
     l.items[key] = l.evictionList.PushFront(&cacheItem{
-      key: key,
-      value: value,
-      ttl: ttl,
-      expirationTime: expirationTime,
+      Key: key,
+      Value: value,
+      TTL: ttl,
+      ExpirationTime: FriendlyTime(expirationTime),
     })
   }
 
   if int32(l.evictionList.Len()) > l.base.Capacity {
-    l.EvictNItems(1)
+    l.evictNItems(1)
   }
 }
 
@@ -84,7 +88,7 @@ func (l *LRUCache) SetItem(key string, value interface{}) {
 }
 
 // Evicts n items from cache by LRU eviction policy.
-func (l *LRUCache) EvictNItems(n int) {
+func (l *LRUCache) evictNItems(n int) {
   for l.evictionList.Len() > 0 && n > 0 {
     l.evictItem(l.evictionList.Back())
     n--
@@ -92,13 +96,15 @@ func (l *LRUCache) EvictNItems(n int) {
 }
 
 // Evicts specified item from cache.
-func (l *LRUCache) evictItem(item *list.Element) {
-  delete(l.items, item.Value.(*cacheItem).key)
-  l.evictionList.Remove(item)
+func (l *LRUCache) evictItem(element *list.Element) {
+  delete(l.items, element.Value.(*cacheItem).Key)
+  l.evictionList.Remove(element)
 }
 
-func (l *LRUCache) isItemExpired(item *list.Element) bool {
-  if time.Now().After(item.Value.(*cacheItem).expirationTime) {
+func (l *LRUCache) isItemExpired(element *list.Element) bool {
+  item := element.Value.(*cacheItem)
+
+  if (item.TTL > 0) && time.Now().After(time.Time(item.ExpirationTime)) {
     return true
   }
 

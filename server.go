@@ -4,6 +4,7 @@ import (
   // "fmt"
   "log"
   "strings"
+  "encoding/json"
   "io/ioutil"
   "net/http"
   "github.com/julienschmidt/httprouter"
@@ -12,12 +13,12 @@ import (
 
 var cache Cacher
 
-func index(w http.ResponseWriter, req *http.Request, _ httprouter.Params) {
+func indexHandler(w http.ResponseWriter, req *http.Request, _ httprouter.Params) {
   w.WriteHeader(http.StatusOK)
   w.Write([]byte("nimKV - (nimble Key-Value Store)"))
 }
 
-func getItem(w http.ResponseWriter, req *http.Request, params httprouter.Params) {
+func getItemHandler(w http.ResponseWriter, req *http.Request, params httprouter.Params) {
   searchKey := params.ByName("key")
 
   item, err := cache.GetItem(searchKey)
@@ -28,23 +29,51 @@ func getItem(w http.ResponseWriter, req *http.Request, params httprouter.Params)
     return
   }
 
+  itemJson, _ := json.Marshal(item)
+
+  w.Header().Set("Content-Type", "application/json; charset=utf-8")
   w.WriteHeader(http.StatusOK)
-  w.Write([]byte(item.Value().(string)))
+  w.Write([]byte(itemJson))
 }
 
-func setItem(w http.ResponseWriter, req *http.Request, _ httprouter.Params) {
+func deleteItemHandler(w http.ResponseWriter, req *http.Request, params httprouter.Params) {
+  searchKey := params.ByName("key")
 
+  err := cache.DeleteItem(searchKey)
+
+  if err != nil {
+    w.WriteHeader(http.StatusNotFound)
+    w.Write([]byte(err.Error()))
+    return
+  }
+
+  w.WriteHeader(http.StatusOK)
+}
+
+func setItemHandler(w http.ResponseWriter, req *http.Request, _ httprouter.Params) {
+  item := cacheItem{}
+
+  err := json.NewDecoder(req.Body).Decode(&item)
+
+  if err != nil {
+    w.WriteHeader(http.StatusInternalServerError)
+    w.Write([]byte(err.Error()))
+    return
+  }
+
+  cache.SetItemWithExpiry(item.Key, item.Value, item.TTL)
+  w.WriteHeader(http.StatusOK)
 }
 
 func initRouter() *httprouter.Router {
   router := httprouter.New()
 
-  // GET requests
-  router.GET("/", index)
-  router.GET("/cache/items/:key", getItem)
+  router.GET("/", indexHandler)
+  router.GET("/cache/items/:key", getItemHandler)
 
-  // POST requests
-  router.POST("/cache/items", setItem)
+  router.POST("/cache/items", setItemHandler)
+
+  router.DELETE("/cache/items/:key", deleteItemHandler)
 
   return router
 }
