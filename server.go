@@ -85,7 +85,7 @@ func setupCache() {
     log.Fatal("Error trying to read config.yaml.")
   }
 
-  cacheBase := CacheBase{}
+  cacheBase := cacheBase{}
   err = yaml.Unmarshal(cacheConfig, &cacheBase)
 
   if err != nil {

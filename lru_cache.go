@@ -9,12 +9,12 @@ import (
 
 // Simple LRU Cache.
 type LRUCache struct {
-  base *CacheBase
+  base *cacheBase
   items map[string]*list.Element
   evictionList *list.List
 }
 
-func NewLRUCache(c *CacheBase) (*LRUCache, []error) {
+func NewLRUCache(c *cacheBase) (*LRUCache, []error) {
   errorList := c.checkAndSetFields()
 
   if len(errorList) > 0 {

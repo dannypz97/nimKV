@@ -18,7 +18,7 @@ type Cacher interface {
 // For instance, LRU cache could use a doubly linked list for fast eviction, while LFU cache could
 // use a minHeap.
 // CacheBase is also used to load configuration info from config.yaml.
-type CacheBase struct {
+type cacheBase struct {
   Capacity int32 `yaml:"Capacity"`
 
   // Cache Type represents its eviction policy. For instance, Type could equal "LRU".
@@ -28,7 +28,7 @@ type CacheBase struct {
 }
 
 // Validates receiver struct, and initializes some fields.
-func (c *CacheBase) checkAndSetFields() []error {
+func (c *cacheBase) checkAndSetFields() []error {
   errorList := make([]error, 0, 2)
 
   if c.Capacity <= 0 {
