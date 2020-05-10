@@ -11,6 +11,7 @@ type Cacher interface {
   DeleteItem(string) error
   SetItemWithExpiry(string, interface{}, time.Duration)
   SetItem(string, interface{})
+  Purge()
 }
 
 // CacheBase struct has fields that could be reused across various specialised cache implementations.

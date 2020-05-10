@@ -50,6 +50,12 @@ func deleteItemHandler(w http.ResponseWriter, req *http.Request, params httprout
   w.WriteHeader(http.StatusOK)
 }
 
+func purgeCacheHandler(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+  cache.Purge()
+
+  w.WriteHeader(http.StatusOK)
+}
+
 func setItemHandler(w http.ResponseWriter, req *http.Request, _ httprouter.Params) {
   item := cacheItem{}
 
@@ -74,6 +80,7 @@ func initRouter() *httprouter.Router {
   router.POST("/cache/items", setItemHandler)
 
   router.DELETE("/cache/items/:key", deleteItemHandler)
+  router.DELETE("/cache/items/", purgeCacheHandler)
 
   return router
 }

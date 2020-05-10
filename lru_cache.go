@@ -98,6 +98,16 @@ func (l *LRUCache) SetItem(key string, value interface{}) {
   l.SetItemWithExpiry(key, value, 0)
 }
 
+func (l *LRUCache) Purge() {
+  l.base.rwLock.Lock()
+  defer l.base.rwLock.Unlock()
+
+  l.evictionList.Init()
+
+  // No references to map after reassignment so it should be garbage collected (eventually)
+  l.items = make(map[string]*list.Element)
+}
+
 // Evicts n items from cache by LRU eviction policy.
 func (l *LRUCache) evictNItems(n int) {
   for l.evictionList.Len() > 0 && n > 0 {
@@ -118,7 +128,7 @@ func (l *LRUCache) evictItem(element *list.Element) {
 func (l *LRUCache) isItemExpired(element *list.Element) bool {
   l.base.rwLock.Lock()
   defer l.base.rwLock.Unlock()
-  
+
   item := element.Value.(*cacheItem)
 
   if (item.TTL > 0) && time.Now().After(time.Time(item.ExpirationTime)) {
