@@ -50,6 +50,26 @@ not_found:
   return nil, errors.New(fmt.Sprintf("Can't find any item with key %v.", key))
 }
 
+// Returns *cacheItems struct for all active (unexpired) items. Doesn't affect ordering of
+// items in the LRU list.
+func (l *LRUCache) GetAllItems() (*cacheItems) {
+  l.base.rwLock.RLock()
+  defer l.base.rwLock.RUnlock()
+
+  items := make([]*cacheItem, 0, 10)
+
+  for _, item := range l.items {
+    // If item has expired, delete it and return an error.
+    // if l.isItemExpired(item) {
+    //   l.evictItem(item)
+    // } else {
+      items = append(items, item.Value.(*cacheItem))
+    // }
+  }
+
+  return &cacheItems{ Items: items }
+}
+
 func (l *LRUCache) DeleteItem(key string) error {
   l.base.rwLock.Lock()
   defer l.base.rwLock.Unlock()

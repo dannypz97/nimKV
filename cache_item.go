@@ -32,3 +32,8 @@ type cacheItem struct {
   TTL time.Duration `json:"ttl"`
   ExpirationTime FriendlyTime `json:"ExpirationTime"`
 }
+
+// For representing all the unexpired items in the cache.
+type cacheItems struct {
+  Items []*cacheItem `json:"items"`
+}

@@ -8,6 +8,7 @@ import (
 
 type Cacher interface {
   GetItem(string) (*cacheItem, error)
+  GetAllItems() *cacheItems
   DeleteItem(string) error
   SetItemWithExpiry(string, interface{}, time.Duration)
   SetItem(string, interface{})

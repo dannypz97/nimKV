@@ -36,6 +36,15 @@ func getItemHandler(w http.ResponseWriter, req *http.Request, params httprouter.
   w.Write([]byte(itemJson))
 }
 
+func getAllItemsHandler(w http.ResponseWriter, req *http.Request, _ httprouter.Params) {
+  items := cache.GetAllItems()
+  itemsJson, _ := json.Marshal(items)
+
+  w.Header().Set("Content-Type", "application/json; charset=utf-8")
+  w.WriteHeader(http.StatusOK)
+  w.Write([]byte(itemsJson))
+}
+
 func deleteItemHandler(w http.ResponseWriter, req *http.Request, params httprouter.Params) {
   searchKey := params.ByName("key")
 
@@ -76,6 +85,7 @@ func initRouter() *httprouter.Router {
 
   router.GET("/", indexHandler)
   router.GET("/cache/items/:key", getItemHandler)
+  router.GET("/cache/items/", getAllItemsHandler)
 
   router.POST("/cache/items", setItemHandler)
 
