@@ -31,6 +31,9 @@ func NewLRUCache(c *cacheBase) (*LRUCache, []error) {
 }
 
 func (l *LRUCache) GetItem(key string) (*cacheItem, error) {
+  l.base.rwLock.RLock()
+  defer l.base.rwLock.RUnlock()
+
   if item, ok := l.items[key]; ok {
 
     // If item has expired, delete it and return an error.
@@ -48,6 +51,9 @@ not_found:
 }
 
 func (l *LRUCache) DeleteItem(key string) error {
+  l.base.rwLock.Lock()
+  defer l.base.rwLock.Unlock()
+
   if item, ok := l.items[key]; ok {
     l.evictItem(item)
     return nil
@@ -64,6 +70,9 @@ func (l *LRUCache) SetItemWithExpiry(key string, value interface{}, ttl time.Dur
   if ttl > 0 {
     expirationTime = time.Now().Add(time.Duration(ttl) * time.Second)
   }
+
+  l.base.rwLock.Lock()
+  defer l.base.rwLock.Unlock()
 
   if item, ok := l.items[key]; ok {
     item.Value.(*cacheItem).Value = value
@@ -99,11 +108,17 @@ func (l *LRUCache) evictNItems(n int) {
 
 // Evicts specified item from cache.
 func (l *LRUCache) evictItem(element *list.Element) {
+  l.base.rwLock.Lock()
+  defer l.base.rwLock.Unlock()
+
   delete(l.items, element.Value.(*cacheItem).Key)
   l.evictionList.Remove(element)
 }
 
 func (l *LRUCache) isItemExpired(element *list.Element) bool {
+  l.base.rwLock.Lock()
+  defer l.base.rwLock.Unlock()
+  
   item := element.Value.(*cacheItem)
 
   if (item.TTL > 0) && time.Now().After(time.Time(item.ExpirationTime)) {
