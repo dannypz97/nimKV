@@ -10,7 +10,7 @@ import (
 // Simple LRU Cache.
 type LRUCache struct {
   base *CacheBase
-  items map[interface{}]*list.Element
+  items map[string]*list.Element
   evictionList *list.List
 }
 
@@ -21,14 +21,16 @@ func NewLRUCache(c *CacheBase) (*LRUCache, []error) {
     return nil, errorList
   }
 
+  c.Type = "LRU"
+
   return &LRUCache {
     base: c,
-    items: make(map[interface{}]*list.Element),
+    items: make(map[string]*list.Element),
     evictionList: list.New(),
   }, nil
 }
 
-func (l *LRUCache) GetItem(key interface{}) (*cacheItem, error) {
+func (l *LRUCache) GetItem(key string) (*cacheItem, error) {
   if item, ok := l.items[key]; ok {
 
     // If item has expired, delete it and return an error.
@@ -45,7 +47,7 @@ not_found:
   return nil, errors.New(fmt.Sprintf("Can't find any item with key %v.", key))
 }
 
-func (l *LRUCache) DeleteItem(key interface{}) error {
+func (l *LRUCache) DeleteItem(key string) error {
   if item, ok := l.items[key]; ok {
     l.evictItem(item)
     return nil
@@ -56,7 +58,7 @@ func (l *LRUCache) DeleteItem(key interface{}) error {
 
 // Adds item to LRUCache. If item already exists, it will be overriden with new value.
 // If capacity is exceeded, least recently used item will be evicted.
-func (l *LRUCache) SetItemWithExpiry(key interface{}, value interface{}, ttl time.Duration) {
+func (l *LRUCache) SetItemWithExpiry(key string, value interface{}, ttl time.Duration) {
   expirationTime := time.Now().Add(time.Duration(ttl) * time.Second)
 
   if item, ok := l.items[key]; ok {
@@ -72,20 +74,18 @@ func (l *LRUCache) SetItemWithExpiry(key interface{}, value interface{}, ttl tim
   }
 
   if int32(l.evictionList.Len()) > l.base.Capacity {
-    l.EvictNItemsByLRU(1)
+    l.EvictNItems(1)
   }
 }
 
 // Adds item to LRUCache with ttl of 0.
-func (l *LRUCache) SetItem(key, value interface{}) {
+func (l *LRUCache) SetItem(key string, value interface{}) {
   l.SetItemWithExpiry(key, value, 0)
 }
 
 // Evicts n items from cache by LRU eviction policy.
-func (l *LRUCache) EvictNItemsByLRU(n int) {
+func (l *LRUCache) EvictNItems(n int) {
   for l.evictionList.Len() > 0 && n > 0 {
-    // delete(l.items, l.evictionList.Back().Value.(*cacheItem).key)
-    // l.evictionList.Remove(l.evictionList.Back())
     l.evictItem(l.evictionList.Back())
     n--
   }

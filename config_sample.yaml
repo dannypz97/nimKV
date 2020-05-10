@@ -1,0 +1,4 @@
+---
+Capacity: 5
+DefaultTTL: 10
+Type: "LRU"
