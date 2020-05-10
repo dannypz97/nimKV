@@ -38,13 +38,16 @@ func (l *LRUCache) GetItem(key string) (*cacheItem, error) {
 
     // If item has expired, delete it and return an error.
     if l.isItemExpired(item) {
+      l.base.rwLock.RUnlock()
       l.evictItem(item)
+      l.base.rwLock.RLock()
+
       goto not_found
     }
 
     l.evictionList.MoveToFront(item)
+
     return item.Value.(*cacheItem), nil
-    // return item.Value.(*cacheItem).value, nil
   }
 not_found:
   return nil, errors.New(fmt.Sprintf("Can't find any item with key %v.", key))
@@ -61,7 +64,9 @@ func (l *LRUCache) GetAllItems() (*cacheItems) {
   for _, item := range l.items {
     // If item has expired, delete it and return an error.
     if l.isItemExpired(item) {
+      l.base.rwLock.RUnlock()
       l.evictItem(item)
+      l.base.rwLock.RLock()
     } else {
       items = append(items, item.Value.(*cacheItem))
     }
@@ -76,6 +81,7 @@ func (l *LRUCache) DeleteItem(key string) error {
 
   if item, ok := l.items[key]; ok {
     l.evictItem(item)
+
     return nil
   }
 
@@ -92,7 +98,7 @@ func (l *LRUCache) SetItemWithExpiry(key string, value interface{}, ttl time.Dur
   }
 
   l.base.rwLock.Lock()
-  defer l.base.rwLock.Unlock()
+
   if item, ok := l.items[key]; ok {
     item.Value.(*cacheItem).Value = value
     item.Value.(*cacheItem).TTL = ttl
@@ -106,6 +112,8 @@ func (l *LRUCache) SetItemWithExpiry(key string, value interface{}, ttl time.Dur
       ExpirationTime: FriendlyTime(expirationTime),
     })
   }
+
+  l.base.rwLock.Unlock()
 
   if int32(l.evictionList.Len()) > l.base.Capacity {
     l.evictNItems(1)
@@ -137,9 +145,6 @@ func (l *LRUCache) evictNItems(n int) {
 
 // Evicts specified item from cache.
 func (l *LRUCache) evictItem(element *list.Element) {
-  l.base.rwLock.RUnlock()
-  defer l.base.rwLock.RLock()
-
   l.base.rwLock.Lock()
   defer l.base.rwLock.Unlock()
 
