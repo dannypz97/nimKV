@@ -44,7 +44,7 @@ func (c *cacheBase) checkAndSetFields() []error {
     errorList = append(errorList, errors.New("Cache Capacity has to be > 0."))
   }
 
-  if (c.TickerPeriod < 0) || (c.TickerPeriod < 30) {
+  if (c.TickerPeriod < 0) || (c.TickerPeriod > 0 && c.TickerPeriod < 30) {
     errorList = append(errorList, errors.New("TickerPeriod should either be 0, or be >= 30."))
   } else {
     c.ticker = time.Tick(c.TickerPeriod * time.Second)
