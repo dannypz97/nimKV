@@ -2,6 +2,7 @@ package nimkv
 
 import (
   "fmt"
+  "log"
   "container/list"
   "errors"
   "time"
@@ -23,11 +24,17 @@ func NewLRUCache(c *cacheBase) (*LRUCache, []error) {
 
   c.Type = "LRU"
 
-  return &LRUCache {
+  l := &LRUCache {
     base: c,
     items: make(map[string]*list.Element),
     evictionList: list.New(),
-  }, nil
+  }
+
+  if c.TickerPeriod > 0 {
+    go l.ttlEvicter()
+  }
+
+  return l, nil
 }
 
 func (l *LRUCache) GetItem(key string) (*cacheItem, error) {
@@ -41,6 +48,8 @@ func (l *LRUCache) GetItem(key string) (*cacheItem, error) {
     if l.isItemExpired(item) {
       goto not_found
     }
+
+    log.Printf("Fetching item \"%s\".", item.Value.(*cacheItem).Key)
 
     l.evictionList.MoveToFront(item)
 
@@ -74,6 +83,7 @@ func (l *LRUCache) DeleteItem(key string) error {
   defer l.base.rwLock.Unlock()
 
   if item, ok := l.items[key]; ok {
+    log.Printf("Deleting item \"%s\".", item.Value.(*cacheItem).Key)
     l.evictItem(item)
 
     return nil
@@ -94,11 +104,13 @@ func (l *LRUCache) SetItemWithExpiry(key string, value interface{}, ttl time.Dur
   l.base.rwLock.Lock()
 
   if item, ok := l.items[key]; ok {
+    log.Printf("Updating item \"%s\".", key)
     item.Value.(*cacheItem).Value = value
     item.Value.(*cacheItem).TTL = ttl
     item.Value.(*cacheItem).ExpirationTime = FriendlyTime(expirationTime)
     l.evictionList.MoveToFront(item)
   } else {
+    log.Printf("Creating item \"%s\".", key)
     l.items[key] = l.evictionList.PushFront(&cacheItem{
       Key: key,
       Value: value,
@@ -123,6 +135,8 @@ func (l *LRUCache) Purge() {
   l.base.rwLock.Lock()
   defer l.base.rwLock.Unlock()
 
+  log.Println("Purging Cache.")
+
   l.evictionList.Init()
 
   // No references to map after reassignment so it should be garbage collected (eventually)
@@ -142,7 +156,11 @@ func (l *LRUCache) evictItem(element *list.Element) {
   l.base.rwLock.Lock()
   defer l.base.rwLock.Unlock()
 
-  delete(l.items, element.Value.(*cacheItem).Key)
+  itemKey := element.Value.(*cacheItem).Key
+
+  log.Printf("[LRU-Evicter]: Evicting item \"%s\" from cache.", itemKey)
+
+  delete(l.items, itemKey )
   l.evictionList.Remove(element)
 }
 
@@ -157,4 +175,18 @@ func (l *LRUCache) isItemExpired(element *list.Element) bool {
   }
 
   return false
+}
+
+func (l *LRUCache) ttlEvicter() {
+  for range l.base.ticker {
+
+    log.Println("[TTL-Evicter]: Trying to evict expired items...")
+
+    for _, item := range l.items {
+      if l.isItemExpired(item) {
+        log.Printf("[TTL-Evicter]: Evicting item \"%s\" from cache.", item.Value.(*cacheItem).Key)
+        l.evictItem(item)
+      }
+    }
+  }
 }

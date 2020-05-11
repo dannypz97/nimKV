@@ -26,7 +26,14 @@ type cacheBase struct {
   // Cache Type represents its eviction policy. For instance, Type could equal "LRU".
   Type string `yaml:"Type"`
 
+  // If TickerPeriod is 0, then expired keys won't be evicted periodically.
+  // TickerPeriod should be = 0 or >= 30.
+  TickerPeriod time.Duration `yaml:"TickerPeriod"`
+
   rwLock sync.RWMutex
+
+  // Can be used to evict expired keys periodically.
+  ticker <-chan time.Time
 }
 
 // Validates receiver struct, and initializes some fields.
@@ -35,6 +42,12 @@ func (c *cacheBase) checkAndSetFields() []error {
 
   if c.Capacity <= 0 {
     errorList = append(errorList, errors.New("Cache Capacity has to be > 0."))
+  }
+
+  if (c.TickerPeriod < 0) || (c.TickerPeriod < 30) {
+    errorList = append(errorList, errors.New("TickerPeriod should either be 0, or be >= 30."))
+  } else {
+    c.ticker = time.Tick(c.TickerPeriod * time.Second)
   }
 
   if len(errorList) > 0 {

@@ -1,2 +1,3 @@
-Capacity: 5
+Capacity: 100
 Type: "LRU"
+TickerPeriod: 60
