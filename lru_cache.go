@@ -79,10 +79,8 @@ func (l *LRUCache) GetAllItems() (*cacheItems) {
 }
 
 func (l *LRUCache) DeleteItem(key string) error {
-  l.base.rwLock.Lock()
-  defer l.base.rwLock.Unlock()
-
   if item, ok := l.items[key]; ok {
+
     log.Printf("Deleting item \"%s\".", item.Value.(*cacheItem).Key)
     l.evictItem(item)
 
@@ -166,8 +164,8 @@ func (l *LRUCache) evictItem(element *list.Element) {
 }
 
 func (l *LRUCache) isItemExpired(element *list.Element) bool {
-  l.base.rwLock.RLock()
-  defer l.base.rwLock.RUnlock()
+  // l.base.rwLock.RLock()
+  // defer l.base.rwLock.RUnlock()
 
   item := element.Value.(*cacheItem)
 
