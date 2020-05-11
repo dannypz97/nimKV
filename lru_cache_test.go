@@ -4,9 +4,14 @@ import (
   "testing"
   "time"
   "strconv"
-  "os"
-  // "log"
+  "log"
+  "io/ioutil"
 )
+
+func init() {
+  // Stop activity logs from being printed on-screen.
+  log.SetOutput(ioutil.Discard)
+}
 
 func TestNewLRUCache(t *testing.T) {
   tables := []struct {
