@@ -31,17 +31,14 @@ func NewLRUCache(c *cacheBase) (*LRUCache, []error) {
 }
 
 func (l *LRUCache) GetItem(key string) (*cacheItem, error) {
-  l.base.rwLock.RLock()
-  defer l.base.rwLock.RUnlock()
+  // evictionList is being modified so a Writer Lock is required.
+  l.base.rwLock.Lock()
+  defer l.base.rwLock.Unlock()
 
   if item, ok := l.items[key]; ok {
 
-    // If item has expired, delete it and return an error.
+    // If item has expired, return an error.
     if l.isItemExpired(item) {
-      l.base.rwLock.RUnlock()
-      l.evictItem(item)
-      l.base.rwLock.RLock()
-
       goto not_found
     }
 
@@ -62,12 +59,9 @@ func (l *LRUCache) GetAllItems() (*cacheItems) {
   items := make([]*cacheItem, 0, 10)
 
   for _, item := range l.items {
-    // If item has expired, delete it and return an error.
-    if l.isItemExpired(item) {
-      l.base.rwLock.RUnlock()
-      l.evictItem(item)
-      l.base.rwLock.RLock()
-    } else {
+
+    // Ignore expired items.
+    if !l.isItemExpired(item) {
       items = append(items, item.Value.(*cacheItem))
     }
   }
