@@ -7,6 +7,7 @@ import (
 )
 
 type Cacher interface {
+  IsItemPresent(string) bool
   GetItem(string) (*cacheItem, error)
   GetAllItems() *cacheItems
   DeleteItem(string) error

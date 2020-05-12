@@ -78,7 +78,7 @@ func (l *LRUCache) GetAllItems() (*cacheItems) {
   return &cacheItems{ Items: items }
 }
 
-// Doesn't affect ordering of items in evictList.
+// Doesn't affect ordering of items in evictList. Returns only unexpired items.
 func (l *LRUCache) IsItemPresent(key string) bool {
   if item, ok := l.items[key]; ok {
     if !l.isItemExpired(item) {
