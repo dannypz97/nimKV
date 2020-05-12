@@ -78,6 +78,17 @@ func (l *LRUCache) GetAllItems() (*cacheItems) {
   return &cacheItems{ Items: items }
 }
 
+// Doesn't affect ordering of items in evictList.
+func (l *LRUCache) IsItemPresent(key string) bool {
+  if item, ok := l.items[key]; ok {
+    if !l.isItemExpired(item) {
+      return true
+    }
+  }
+
+  return false
+}
+
 func (l *LRUCache) DeleteItem(key string) error {
   if item, ok := l.items[key]; ok {
 
