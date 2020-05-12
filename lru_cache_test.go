@@ -110,6 +110,83 @@ func TestSetItem(t *testing.T) {
   }
 }
 
+func TestPurge(t *testing.T) {
+  tables := []struct {
+    key string
+    value interface{}
+  }{
+    { key: "A", value: "A" },
+    { key: "B", value: "B" },
+    { key: "C", value: "C" },
+    { key: "A", value: "B" },
+    { key: "D", value: "D" },
+  }
+
+  cache, _ := NewLRUCache(&cacheBase{
+    Capacity: len(tables),
+    TickerPeriod: time.Duration(0) * time.Second,
+  })
+
+  for _, table := range tables {
+    cache.SetItem(table.key, table.value)
+  }
+
+  cache.Purge()
+
+  if len(cache.items) - cache.evictionList.Len() != 0 {
+    t.Errorf("Purge doesn't work properly!!!")
+  }
+}
+
+func TestDeleteItem(t *testing.T) {
+  tables := []struct {
+    key string
+    value interface{}
+    shouldDelete bool
+  }{
+    { key: "A", value: "A", shouldDelete: true },
+    { key: "B", value: "B" },
+    { key: "C", value: "C", shouldDelete: true },
+  }
+
+  cache, _ := NewLRUCache(&cacheBase{
+    Capacity: len(tables),
+    TickerPeriod: time.Duration(0) * time.Second,
+  })
+
+  for _, table := range tables {
+    cache.SetItem(table.key, table.value)
+  }
+
+  keysForDeleteAttempt := []string{ "D", "E", "123" }
+
+  for _, key := range keysForDeleteAttempt {
+    err := cache.DeleteItem(key)
+
+    if err == nil {
+      t.Errorf("No error returned when trying to delete item that doesn't exist.")
+    }
+  }
+
+  for _, table := range tables {
+    if table.shouldDelete {
+      cache.DeleteItem(table.key)
+    }
+  }
+
+  for _, table := range tables {
+    if table.shouldDelete {
+      if cache.IsItemPresent(table.key) {
+        t.Errorf("Item %s should have been deleted.", table.key)
+      }
+    } else {
+        if !cache.IsItemPresent(table.key) {
+          t.Errorf("Item %s should have not been deleted.", table.key)
+        }
+    }
+  }
+}
+
 func BenchmarkSetUniqueItemsUninterruptedForSmallCache(b *testing.B) {
   cache, _ := NewLRUCache(&cacheBase{
     Capacity: 100,
