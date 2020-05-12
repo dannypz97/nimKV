@@ -130,7 +130,7 @@ func (l *LRUCache) SetItemWithExpiry(key string, value interface{}, ttl time.Dur
 
   l.base.rwLock.Unlock()
 
-  if int32(l.evictionList.Len()) > l.base.Capacity {
+  if l.evictionList.Len() > l.base.Capacity {
     // l.evictNItems(1)
     item := l.evictionList.Back()
     log.Printf("[LRU-Evicter]: Evicting item \"%s\" from cache.", item.Value.(*cacheItem).Key)

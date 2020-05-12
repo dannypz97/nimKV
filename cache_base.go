@@ -21,7 +21,7 @@ type Cacher interface {
 // use a minHeap.
 // CacheBase is also used to load configuration info from config.yaml.
 type cacheBase struct {
-  Capacity int32 `yaml:"Capacity"`
+  Capacity int `yaml:"Capacity"`
 
   // Cache Type represents its eviction policy. For instance, Type could equal "LRU".
   Type string `yaml:"Type"`
