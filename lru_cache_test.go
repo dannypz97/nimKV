@@ -5,6 +5,7 @@ import (
   "time"
   "strconv"
   "log"
+  // "fmt"
   "io/ioutil"
 )
 
@@ -15,7 +16,7 @@ func init() {
 
 func TestNewLRUCache(t *testing.T) {
   tables := []struct {
-    capacity int32
+    capacity int
     tickerPeriod time.Duration
     errorsExpected bool
   }{
@@ -39,6 +40,72 @@ func TestNewLRUCache(t *testing.T) {
 
     if !table.errorsExpected && (cache == nil) {
       t.Errorf("Expected *LRUCache.")
+    }
+  }
+}
+
+func TestIsItemPresent(t *testing.T) {
+  tables := []struct {
+    key string
+    value interface{}
+    shouldItemBeEvicted bool
+  }{
+    { key: "A", value: "A" },
+    { key: "B", value: "B", shouldItemBeEvicted: true },
+    { key: "C", value: "C", shouldItemBeEvicted: true },
+    { key: "A", value: "B" },
+    { key: "D", value: "D" },
+    { key: "E", value: "E" },
+    { key: "F", value: "F" },
+  }
+
+  cache, _ := NewLRUCache(&cacheBase{
+    Capacity: 4,
+    TickerPeriod: time.Duration(0) * time.Second,
+  })
+
+  for _, table := range tables {
+    cache.SetItem(table.key, table.value)
+  }
+
+  for _, table := range tables {
+    if table.shouldItemBeEvicted && cache.IsItemPresent(table.key) {
+      t.Errorf("Item %s should have been evicted", table.key)
+    }
+    if !table.shouldItemBeEvicted && !cache.IsItemPresent(table.key) {
+      t.Errorf("Item %s should have been present", table.key)
+    }
+  }
+}
+
+func TestSetItem(t *testing.T) {
+  tables := []struct {
+    key string
+    value interface{}
+    shouldBeOverwritten bool
+  }{
+    { key: "A", value: "A", shouldBeOverwritten: true },
+    { key: "B", value: "B" },
+    { key: "C", value: "C" },
+    { key: "A", value: "B" },
+    { key: "D", value: "D" },
+  }
+
+  cache, _ := NewLRUCache(&cacheBase{
+    Capacity: len(tables),
+    TickerPeriod: time.Duration(0) * time.Second,
+  })
+
+  for _, table := range tables {
+    cache.SetItem(table.key, table.value)
+  }
+
+  for _, table := range tables {
+    item, _ := cache.GetItem(table.key)
+    itemStringValue := item.Value
+
+    if !table.shouldBeOverwritten && (table.value != itemStringValue) {
+      t.Errorf("Expected item %s to have value %s", table.key, table.value)
     }
   }
 }
